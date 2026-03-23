@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Shared User table (managed by LMS, read/upsert only from OfferLens)
+model User {
+  id         String  @id @default(cuid())
+  supabaseId String  @unique
+  email      String  @unique
+  name       String?
+  avatar     String?
+
+  @@map("User")
+}
+
+model Offer {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  companyName   String   @map("company_name")
+  position      String
+  logo          String?
+  color         String   @default("#6366f1")
+  date          String?
+  status        String   @default("pending")
+  isCurrent     Boolean  @default(false) @map("is_current")
+  overallRating Float?   @map("overall_rating")
+  values        Json     @default("[]")
+  notes         String?
+  deadline      String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("of_offers")
+}
+
+model CustomCriterion {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String
+  category    String   @default("custom")
+  description String?
+  type        String   @default("text")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("of_custom_criteria")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  role      String
+  content   String
+  timestamp DateTime @default(now())
+
+  @@index([userId])
+  @@map("of_chat_messages")
+}

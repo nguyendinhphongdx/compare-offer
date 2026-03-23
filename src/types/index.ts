@@ -3,7 +3,7 @@ export interface Criterion {
   name: string;
   category: CriterionCategory;
   description: string;
-  type: 'number' | 'text' | 'rating' | 'boolean' | 'salary';
+  type: 'number' | 'text' | 'rating' | 'boolean' | 'salary' | 'work_schedule';
   isCustom?: boolean;
 }
 
@@ -29,7 +29,8 @@ export interface Offer {
   logo?: string;
   color: string;
   date: string;
-  status: 'pending' | 'negotiating' | 'accepted' | 'declined';
+  status: 'current' | 'pending' | 'negotiating' | 'accepted' | 'declined';
+  isCurrent?: boolean;
   overallRating?: number;
   values: CriterionValue[];
   notes?: string;

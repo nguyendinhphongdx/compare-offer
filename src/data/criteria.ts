@@ -5,13 +5,14 @@ export const DEFAULT_CRITERIA: Criterion[] = [
   { id: 'base_salary', name: 'Lương cơ bản (Gross)', category: 'compensation', description: 'Mức lương gross hàng tháng', type: 'salary' },
   { id: 'net_salary', name: 'Lương Net', category: 'compensation', description: 'Mức lương net sau thuế', type: 'salary' },
   { id: 'bonus_13th', name: 'Thưởng tháng 13', category: 'compensation', description: 'Có thưởng tháng 13 không', type: 'boolean' },
-  { id: 'performance_bonus', name: 'Thưởng hiệu suất', category: 'compensation', description: 'Mức thưởng theo hiệu suất công việc', type: 'text' },
+  { id: 'performance_bonus', name: 'Thưởng hiệu suất', category: 'compensation', description: 'Mức thưởng theo hiệu suất công việc', type: 'salary' },
   { id: 'signing_bonus', name: 'Signing Bonus', category: 'compensation', description: 'Thưởng ký hợp đồng', type: 'salary' },
   { id: 'stock_options', name: 'Cổ phiếu/ESOP', category: 'compensation', description: 'Quyền chọn mua cổ phiếu', type: 'text' },
   { id: 'salary_review', name: 'Review lương', category: 'compensation', description: 'Chu kỳ xét tăng lương', type: 'text' },
 
   // Benefits
-  { id: 'health_insurance', name: 'Bảo hiểm sức khỏe', category: 'benefits', description: 'Gói bảo hiểm sức khỏe cho nhân viên', type: 'text' },
+  { id: 'health_insurance', name: 'Bảo hiểm sức khỏe', category: 'benefits', description: 'Mức bảo hiểm sức khỏe/năm', type: 'salary' },
+  { id: 'health_insurance_note', name: 'Chi tiết bảo hiểm', category: 'benefits', description: 'Gói bảo hiểm, phạm vi, gia đình...', type: 'text' },
   { id: 'annual_leave', name: 'Ngày phép/năm', category: 'benefits', description: 'Số ngày nghỉ phép hàng năm', type: 'number' },
   { id: 'remote_work', name: 'Làm việc từ xa', category: 'benefits', description: 'Chính sách work from home', type: 'text' },
   { id: 'lunch_allowance', name: 'Phụ cấp ăn trưa', category: 'benefits', description: 'Hỗ trợ tiền ăn trưa', type: 'text' },
@@ -36,7 +37,9 @@ export const DEFAULT_CRITERIA: Criterion[] = [
   { id: 'industry', name: 'Ngành nghề', category: 'career_growth', description: 'Lĩnh vực hoạt động của công ty', type: 'text' },
 
   // Work-Life Balance
-  { id: 'working_hours', name: 'Giờ làm việc', category: 'work_life_balance', description: 'Thời gian làm việc hàng ngày', type: 'text' },
+  { id: 'work_schedule', name: 'Lịch làm việc', category: 'work_life_balance', description: 'T2-T6 / T2-Sáng T7 / T2-T7 / Khác', type: 'work_schedule' },
+  { id: 'working_hours', name: 'Giờ làm việc', category: 'work_life_balance', description: 'VD: 8:00 - 17:00', type: 'text' },
+  { id: 'total_hours_week', name: 'Tổng giờ/tuần', category: 'work_life_balance', description: 'Số giờ làm việc thực tế mỗi tuần', type: 'number' },
   { id: 'overtime', name: 'Overtime', category: 'work_life_balance', description: 'Tần suất và chính sách OT', type: 'text' },
   { id: 'flexibility', name: 'Linh hoạt giờ giấc', category: 'work_life_balance', description: 'Mức độ linh hoạt về thời gian', type: 'rating' },
   { id: 'commute_time', name: 'Thời gian đi lại', category: 'work_life_balance', description: 'Khoảng cách từ nhà đến văn phòng', type: 'text' },

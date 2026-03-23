@@ -1,7 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   BarChart,
   Bar,
@@ -23,31 +29,34 @@ import {
   Cell,
 } from 'recharts';
 import { ArrowRight } from 'lucide-react';
-
-type ChartType = 'salary' | 'radar' | 'growth' | 'benefits';
+import { useTheme } from 'next-themes';
 
 export default function ChartsView() {
-  const { offers, criteria, setCurrentPage } = useStore();
-  const [activeChart, setActiveChart] = useState<ChartType>('salary');
+  const { offers, criteria } = useStore();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const [growthYears, setGrowthYears] = useState(5);
   const [growthRate, setGrowthRate] = useState(15);
 
   if (offers.length === 0) {
     return (
       <div className="animate-fade-in">
-        <h1 className="text-2xl font-bold mb-2">Biểu đồ & Phân tích</h1>
-        <div className="glass-card p-12 text-center mt-6">
-          <h3 className="text-lg font-semibold mb-2">Chưa có dữ liệu</h3>
-          <p className="text-[var(--text-secondary)] mb-4">Thêm offer để xem biểu đồ phân tích</p>
-          <button className="btn-primary" onClick={() => setCurrentPage('offers')}>
-            Thêm Offer <ArrowRight size={16} />
-          </button>
-        </div>
+        <h1 className="text-2xl font-bold tracking-tight mb-2">Biểu đồ & Phân tích</h1>
+        <Card className="mt-6">
+          <CardContent className="py-12 text-center">
+            <h3 className="text-lg font-semibold mb-2">Chưa có dữ liệu</h3>
+            <p className="text-muted-foreground mb-4">Thêm offer để xem biểu đồ phân tích</p>
+            <Link href="/offers">
+              <Button>
+                Thêm Offer <ArrowRight size={16} />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  // Salary comparison data
   const salaryData = offers.map((o) => {
     const base = o.values.find((v) => v.criterionId === 'base_salary');
     const net = o.values.find((v) => v.criterionId === 'net_salary');
@@ -61,7 +70,6 @@ export default function ChartsView() {
     };
   });
 
-  // Radar data - rating categories
   const ratingCriteria = criteria.filter((c) => c.type === 'rating');
   const radarData = ratingCriteria.map((criterion) => {
     const dataPoint: Record<string, string | number> = { criterion: criterion.name };
@@ -72,18 +80,18 @@ export default function ChartsView() {
     return dataPoint;
   });
 
-  // Growth projection data
   const growthData = Array.from({ length: growthYears + 1 }, (_, year) => {
     const dataPoint: Record<string, string | number> = { year: `Năm ${year}` };
     offers.forEach((offer) => {
       const base = offer.values.find((v) => v.criterionId === 'base_salary');
       const baseSalary = Number(base?.value || 0);
-      dataPoint[offer.companyName] = Math.round(baseSalary * Math.pow(1 + growthRate / 100, year));
+      dataPoint[offer.companyName] = Math.round(
+        baseSalary * Math.pow(1 + growthRate / 100, year)
+      );
     });
     return dataPoint;
   });
 
-  // Benefits pie data
   const benefitsCriteria = criteria.filter((c) => c.category === 'benefits');
   const benefitsData = offers.map((o) => {
     const filledBenefits = benefitsCriteria.filter((c) => {
@@ -104,210 +112,246 @@ export default function ChartsView() {
     return val.toString();
   };
 
-  const chartTabs: { id: ChartType; label: string }[] = [
-    { id: 'salary', label: 'So sánh lương' },
-    { id: 'radar', label: 'Đánh giá tổng hợp' },
-    { id: 'growth', label: 'Dự đoán tăng trưởng' },
-    { id: 'benefits', label: 'Phúc lợi' },
-  ];
+  const CHART_FONT = 'Inter, ui-sans-serif, system-ui, sans-serif';
+  const gridColor = isDark ? '#2e3a50' : '#e2e8f0';
+  const axisColor = isDark ? '#7a8599' : '#94a3b8';
+  const emptyPieColor = isDark ? '#2e3a50' : '#e2e8f0';
+
+  const tooltipStyle = {
+    background: isDark ? '#1a2236' : '#ffffff',
+    border: `1px solid ${isDark ? '#2e3a50' : '#e2e8f0'}`,
+    borderRadius: '8px',
+    color: isDark ? '#e8ecf2' : '#1e293b',
+    fontFamily: CHART_FONT,
+  };
+
+  const axisStyle = { fontFamily: CHART_FONT };
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold">Biểu đồ & Phân tích</h1>
-        <p className="text-[var(--text-secondary)] mt-1">Trực quan hóa và so sánh các offer</p>
+        <h1 className="text-2xl font-bold tracking-tight">Biểu đồ & Phân tích</h1>
+        <p className="text-muted-foreground mt-1">Trực quan hóa và so sánh các offer</p>
       </div>
 
-      {/* Chart Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {chartTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveChart(tab.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeChart === tab.id
-                ? 'bg-[rgba(99,102,241,0.2)] text-[#818cf8] border border-[rgba(99,102,241,0.3)]'
-                : 'text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-[rgba(99,102,241,0.3)]'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Tabs defaultValue="salary" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="salary">So sánh lương</TabsTrigger>
+          <TabsTrigger value="radar">Đánh giá tổng hợp</TabsTrigger>
+          <TabsTrigger value="growth">Dự đoán tăng trưởng</TabsTrigger>
+          <TabsTrigger value="benefits">Phúc lợi</TabsTrigger>
+        </TabsList>
 
-      {/* Charts */}
-      <div className="glass-card p-6">
-        {activeChart === 'salary' && (
-          <div>
-            <h3 className="text-lg font-semibold mb-4">So sánh mức lương</h3>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={salaryData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(51,65,85,0.5)" />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={formatVND} />
-                <Tooltip
-                  contentStyle={{
-                    background: '#1e293b',
-                    border: '1px solid #334155',
-                    borderRadius: '8px',
-                    color: '#f1f5f9',
-                  }}
-                  formatter={(value) => new Intl.NumberFormat('vi-VN').format(Number(value ?? 0)) + ' ₫'}
-                />
-                <Legend />
-                <Bar dataKey="Lương Gross" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Lương Net" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Signing Bonus" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
-        {activeChart === 'radar' && (
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Đánh giá tổng hợp (Rating)</h3>
-            {radarData.length === 0 ? (
-              <p className="text-center text-[var(--text-secondary)] py-12">
-                Chưa có đánh giá rating nào. Hãy đánh giá các tiêu chí trong phần Quản lý Offers.
-              </p>
-            ) : (
-              <ResponsiveContainer width="100%" height={450}>
-                <RadarChart data={radarData}>
-                  <PolarGrid stroke="rgba(51,65,85,0.5)" />
-                  <PolarAngleAxis dataKey="criterion" stroke="#94a3b8" fontSize={11} />
-                  <PolarRadiusAxis angle={30} domain={[0, 5]} stroke="#64748b" fontSize={10} />
-                  {offers.map((offer) => (
-                    <Radar
-                      key={offer.id}
-                      name={offer.companyName}
-                      dataKey={offer.companyName}
-                      stroke={offer.color}
-                      fill={offer.color}
-                      fillOpacity={0.15}
-                      strokeWidth={2}
-                    />
-                  ))}
-                  <Legend />
+        <TabsContent value="salary">
+          <Card>
+            <CardHeader>
+              <CardTitle>So sánh mức lương</CardTitle>
+              <CardDescription>Lương Gross, Net và Signing Bonus của từng offer</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={salaryData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                  <XAxis dataKey="name" stroke={axisColor} fontSize={12} tick={axisStyle} />
+                  <YAxis
+                    stroke={axisColor}
+                    fontSize={12}
+                    tickFormatter={formatVND}
+                    tick={axisStyle}
+                  />
                   <Tooltip
-                    contentStyle={{
-                      background: '#1e293b',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                      color: '#f1f5f9',
-                    }}
+                    contentStyle={tooltipStyle}
+                    formatter={(value) =>
+                      new Intl.NumberFormat('vi-VN').format(Number(value ?? 0)) + ' ₫'
+                    }
                   />
-                </RadarChart>
+                  <Legend wrapperStyle={axisStyle} />
+                  <Bar dataKey="Lương Gross" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Lương Net" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Signing Bonus" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
-            )}
-          </div>
-        )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {activeChart === 'growth' && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Dự đoán tăng trưởng lương</h3>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-[var(--text-secondary)]">Số năm:</label>
-                  <input
-                    type="number"
-                    className="input-field w-16 text-center"
-                    value={growthYears}
-                    min={1}
-                    max={20}
-                    onChange={(e) => setGrowthYears(Number(e.target.value) || 5)}
-                  />
+        <TabsContent value="radar">
+          <Card>
+            <CardHeader>
+              <CardTitle>Đánh giá tổng hợp (Rating)</CardTitle>
+              <CardDescription>So sánh đánh giá sao giữa các offer</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {radarData.length === 0 ? (
+                <p className="text-center text-muted-foreground py-12">
+                  Chưa có đánh giá rating nào. Hãy đánh giá các tiêu chí trong Quản lý Offers.
+                </p>
+              ) : (
+                <ResponsiveContainer width="100%" height={450}>
+                  <RadarChart data={radarData}>
+                    <PolarGrid stroke={gridColor} />
+                    <PolarAngleAxis
+                      dataKey="criterion"
+                      stroke={axisColor}
+                      fontSize={11}
+                      tick={axisStyle}
+                    />
+                    <PolarRadiusAxis
+                      angle={30}
+                      domain={[0, 5]}
+                      stroke={axisColor}
+                      fontSize={10}
+                      tick={axisStyle}
+                    />
+                    {offers.map((offer) => (
+                      <Radar
+                        key={offer.id}
+                        name={offer.companyName}
+                        dataKey={offer.companyName}
+                        stroke={offer.color}
+                        fill={offer.color}
+                        fillOpacity={0.15}
+                        strokeWidth={2}
+                      />
+                    ))}
+                    <Legend wrapperStyle={axisStyle} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="growth">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <CardTitle>Dự đoán tăng trưởng lương</CardTitle>
+                  <CardDescription>
+                    Ước tính lương theo thời gian với mức tăng cố định
+                  </CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-[var(--text-secondary)]">Tăng %/năm:</label>
-                  <input
-                    type="number"
-                    className="input-field w-16 text-center"
-                    value={growthRate}
-                    min={0}
-                    max={100}
-                    onChange={(e) => setGrowthRate(Number(e.target.value) || 10)}
-                  />
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm whitespace-nowrap">Số năm:</Label>
+                    <Input
+                      type="number"
+                      className="w-16 text-center"
+                      value={growthYears}
+                      min={1}
+                      max={20}
+                      onChange={(e) => setGrowthYears(Number(e.target.value) || 5)}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm whitespace-nowrap">Tăng %/năm:</Label>
+                    <Input
+                      type="number"
+                      className="w-16 text-center"
+                      value={growthRate}
+                      min={0}
+                      max={100}
+                      onChange={(e) => setGrowthRate(Number(e.target.value) || 10)}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={growthData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(51,65,85,0.5)" />
-                <XAxis dataKey="year" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={formatVND} />
-                <Tooltip
-                  contentStyle={{
-                    background: '#1e293b',
-                    border: '1px solid #334155',
-                    borderRadius: '8px',
-                    color: '#f1f5f9',
-                  }}
-                  formatter={(value) => new Intl.NumberFormat('vi-VN').format(Number(value ?? 0)) + ' ₫'}
-                />
-                <Legend />
-                {offers.map((offer) => (
-                  <Line
-                    key={offer.id}
-                    type="monotone"
-                    dataKey={offer.companyName}
-                    stroke={offer.color}
-                    strokeWidth={2}
-                    dot={{ fill: offer.color, r: 4 }}
-                    activeDot={{ r: 6 }}
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart
+                  data={growthData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                  <XAxis dataKey="year" stroke={axisColor} fontSize={12} tick={axisStyle} />
+                  <YAxis
+                    stroke={axisColor}
+                    fontSize={12}
+                    tickFormatter={formatVND}
+                    tick={axisStyle}
                   />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-            <p className="text-xs text-[var(--text-muted)] mt-2 text-center">
-              * Dự đoán dựa trên mức tăng lương trung bình {growthRate}%/năm. Thực tế có thể khác.
-            </p>
-          </div>
-        )}
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={(value) =>
+                      new Intl.NumberFormat('vi-VN').format(Number(value ?? 0)) + ' ₫'
+                    }
+                  />
+                  <Legend wrapperStyle={axisStyle} />
+                  {offers.map((offer) => (
+                    <Line
+                      key={offer.id}
+                      type="monotone"
+                      dataKey={offer.companyName}
+                      stroke={offer.color}
+                      strokeWidth={2}
+                      dot={{ fill: offer.color, r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                * Dự đoán dựa trên mức tăng lương trung bình {growthRate}%/năm. Thực tế có thể
+                khác.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {activeChart === 'benefits' && (
-          <div>
-            <h3 className="text-lg font-semibold mb-4">So sánh phúc lợi</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {benefitsData.map((item) => (
-                <div key={item.name} className="flex items-center gap-4">
-                  <div className="w-32 h-32">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={[
-                            { name: 'Có', value: item.value },
-                            { name: 'Chưa', value: item.total - item.value },
-                          ]}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={30}
-                          outerRadius={50}
-                          startAngle={90}
-                          endAngle={-270}
-                          dataKey="value"
-                        >
-                          <Cell fill={item.color} />
-                          <Cell fill="rgba(51,65,85,0.5)" />
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
+        <TabsContent value="benefits">
+          <Card>
+            <CardHeader>
+              <CardTitle>So sánh phúc lợi</CardTitle>
+              <CardDescription>Mức độ phúc lợi đã ghi nhận cho mỗi offer</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {benefitsData.map((item) => (
+                  <div key={item.name} className="flex items-center gap-4">
+                    <div className="w-32 h-32">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: 'Có', value: item.value },
+                              { name: 'Chưa', value: item.total - item.value },
+                            ]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={30}
+                            outerRadius={50}
+                            startAngle={90}
+                            endAngle={-270}
+                            dataKey="value"
+                          >
+                            <Cell fill={item.color} />
+                            <Cell fill={emptyPieColor} />
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div>
+                      <p className="font-semibold">{item.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.value}/{item.total} phúc lợi đã ghi nhận
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {item.total > 0
+                          ? Math.round((item.value / item.total) * 100)
+                          : 0}
+                        % hoàn thành
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold">{item.name}</p>
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      {item.value}/{item.total} phúc lợi đã ghi nhận
-                    </p>
-                    <p className="text-xs text-[var(--text-muted)] mt-1">
-                      {Math.round((item.value / item.total) * 100)}% hoàn thành
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
