@@ -1,11 +1,10 @@
 'use client';
 
-import Link from 'next/link';
-import { useStore } from '@/store/useStore';
-import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/data/criteria';
-import StarRating from './StarRating';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { DEFAULT_CRITERIA, CATEGORY_LABELS, CATEGORY_COLORS } from '@/data/criteria';
+import StarRating from '@/components/StarRating';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -16,70 +15,125 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { CheckCircle2, XCircle, ArrowRight, Share2, Check, Loader2, TrendingUp, Trophy } from 'lucide-react';
-import { useState } from 'react';
+import { CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle2, XCircle, Briefcase, TrendingUp, Trophy } from 'lucide-react';
+import type { Offer, Criterion, CriterionValue } from '@/types';
 
-export default function CompareView() {
-  const {
-    offers,
-    criteria,
-    selectedOfferIds,
-    toggleOfferSelection,
-    selectAllOffers,
-    clearSelection,
-  } = useStore();
+interface SharedData {
+  id: string;
+  title: string;
+  offers: Offer[];
+  criteria: Array<{ id: string; name: string; category: string; type: string; description?: string }>;
+  createdAt: string;
+}
 
-  const [sharing, setSharing] = useState(false);
-  const [shared, setShared] = useState(false);
+const formatValue = (val: string | number | boolean | undefined, type: string) => {
+  if (val === undefined || val === '' || val === 0) return '—';
+  if (type === 'salary') {
+    const num = Number(val);
+    if (isNaN(num)) return String(val);
+    return new Intl.NumberFormat('vi-VN').format(num) + ' ₫';
+  }
+  if (type === 'boolean') return val ? 'Có' : 'Không';
+  if (type === 'work_schedule') {
+    const map: Record<string, string> = {
+      mon_fri: '🟢 T2 - T6',
+      mon_sat_half: '🟡 T2 - Sáng T7',
+      mon_sat: '🔴 T2 - T7',
+      shift: '🔵 Ca kíp',
+      other: '⚪ Khác',
+    };
+    return map[String(val)] || String(val);
+  }
+  return String(val);
+};
 
-  const selectedOffers = offers.filter((o) => selectedOfferIds.includes(o.id));
+export default function SharedComparePage() {
+  const { id } = useParams<{ id: string }>();
+  const [data, setData] = useState<SharedData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleShare = async () => {
-    if (selectedOffers.length < 2) return;
-    setSharing(true);
-    try {
-      const res = await fetch('/api/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offerIds: selectedOffers.map((o) => o.id) }),
-      });
-      const data = await res.json();
-      if (data.id) {
-        const url = `${window.location.origin}/share/${data.id}`;
-        await navigator.clipboard.writeText(url);
-        setShared(true);
-        setTimeout(() => setShared(false), 3000);
+  useEffect(() => {
+    fetch(`/api/share/${id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(res.status === 404 ? 'Không tìm thấy bài so sánh' : 'Link đã hết hạn hoặc không hợp lệ');
+        return res.json();
+      })
+      .then(setData)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground animate-pulse">Đang tải...</div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="py-12 text-center">
+            <h2 className="text-xl font-semibold mb-2">Không thể mở bài so sánh</h2>
+            <p className="text-muted-foreground">{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const offers = data.offers as Offer[];
+
+  // Merge default criteria with custom criteria from shared data
+  const customCriteria: Criterion[] = (data.criteria || []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    category: c.category as Criterion['category'],
+    description: c.description || '',
+    type: c.type as Criterion['type'],
+    isCustom: true,
+  }));
+  const allCriteria = [...DEFAULT_CRITERIA, ...customCriteria];
+
+  // Only show criteria that have at least one value across offers
+  const usedCriteriaIds = new Set<string>();
+  offers.forEach((o) => {
+    (o.values || []).forEach((v: CriterionValue) => {
+      if (v.value !== undefined && v.value !== '' && v.value !== 0) {
+        usedCriteriaIds.add(v.criterionId);
       }
-    } catch {
-      // silently fail
-    } finally {
-      setSharing(false);
-    }
-  };
+    });
+  });
 
-  const getOfferValue = (offer: typeof offers[0], criterionId: string) => {
-    const v = offer.values.find((v) => v.criterionId === criterionId);
+  const activeCriteria = allCriteria.filter((c) => usedCriteriaIds.has(c.id));
+
+  const groupedCriteria = Object.entries(CATEGORY_LABELS)
+    .map(([key, label]) => ({
+      key,
+      label,
+      color: CATEGORY_COLORS[key],
+      items: activeCriteria.filter((c) => c.category === key),
+    }))
+    .filter((g) => g.items.length > 0);
+
+  const getOfferValue = (offer: Offer, criterionId: string) => {
+    const v = (offer.values || []).find((v: CriterionValue) => v.criterionId === criterionId);
     return Number(v?.value || 0);
   };
 
-  const calcAnnualPackage = (offer: typeof offers[0]) => {
+  const calcAnnualPackage = (offer: Offer) => {
     const grossMonthly = getOfferValue(offer, 'base_salary');
-    const has13th = offer.values.find((v) => v.criterionId === 'bonus_13th')?.value === true;
+    const has13th = (offer.values || []).find((v: CriterionValue) => v.criterionId === 'bonus_13th')?.value === true;
     const performanceBonus = getOfferValue(offer, 'performance_bonus');
     const signingBonus = getOfferValue(offer, 'signing_bonus');
-
     const months = has13th ? 13 : 12;
     const annualBase = grossMonthly * months;
     const total = annualBase + performanceBonus + signingBonus;
-
-    return {
-      grossMonthly,
-      months,
-      annualBase,
-      performanceBonus,
-      signingBonus,
-      total,
-    };
+    return { grossMonthly, months, annualBase, performanceBonus, signingBonus, total };
   };
 
   const formatVND = (num: number) => {
@@ -87,50 +141,13 @@ export default function CompareView() {
     return new Intl.NumberFormat('vi-VN').format(num) + ' ₫';
   };
 
-  const formatMillions = (num: number) => {
-    if (num === 0) return '—';
-    const m = num / 1_000_000;
-    return m % 1 === 0 ? `${m}M` : `${m.toFixed(1)}M`;
-  };
-
-  const groupedCriteria = Object.entries(CATEGORY_LABELS)
-    .map(([key, label]) => ({
-      key,
-      label,
-      color: CATEGORY_COLORS[key],
-      items: criteria.filter((c) => c.category === key),
-    }))
-    .filter((g) => g.items.length > 0);
-
-  const formatValue = (val: string | number | boolean | undefined, type: string) => {
-    if (val === undefined || val === '' || val === 0) return '—';
-    if (type === 'salary') {
-      const num = Number(val);
-      if (isNaN(num)) return String(val);
-      return new Intl.NumberFormat('vi-VN').format(num) + ' ₫';
-    }
-    if (type === 'boolean') return val ? 'Có' : 'Không';
-    if (type === 'work_schedule') {
-      const map: Record<string, string> = {
-        mon_fri: '🟢 T2 - T6',
-        mon_sat_half: '🟡 T2 - Sáng T7',
-        mon_sat: '🔴 T2 - T7',
-        shift: '🔵 Ca kíp',
-        other: '⚪ Khác',
-      };
-      return map[String(val)] || String(val);
-    }
-    return String(val);
-  };
-
   const getSalaryComparison = (criterionId: string) => {
-    const values = selectedOffers
+    const values = offers
       .map((o) => {
-        const v = o.values.find((v) => v.criterionId === criterionId);
+        const v = (o.values || []).find((v: CriterionValue) => v.criterionId === criterionId);
         return { offerId: o.id, value: Number(v?.value || 0) };
       })
       .filter((v) => v.value > 0);
-
     if (values.length < 2) return null;
     const max = Math.max(...values.map((v) => v.value));
     return values.reduce(
@@ -142,113 +159,51 @@ export default function CompareView() {
     );
   };
 
-  if (offers.length < 2) {
-    return (
-      <div className="animate-fade-in">
-        <h1 className="text-2xl font-bold tracking-tight mb-2">So sánh Offers</h1>
-        <Card className="mt-6">
-          <CardContent className="py-12 text-center">
-            <h3 className="text-lg font-semibold mb-2">Cần ít nhất 2 offers để so sánh</h3>
-            <p className="text-muted-foreground mb-4">
-              Bạn hiện có {offers.length} offer. Hãy thêm offer để bắt đầu so sánh.
-            </p>
-            <Link href="/offers">
-              <Button>
-                Thêm Offer <ArrowRight size={16} />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">So sánh Offers</h1>
-          <p className="text-muted-foreground mt-1">Chọn các offer để so sánh chi tiết</p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
+            <Briefcase size={18} className="text-primary-foreground" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold">OfferLens</h1>
+            <p className="text-xs text-muted-foreground">Chia sẻ bài so sánh</p>
+          </div>
         </div>
-        {selectedOffers.length >= 2 && (
-          <Button
-            variant={shared ? 'default' : 'outline'}
-            onClick={handleShare}
-            disabled={sharing}
-            className={shared ? 'bg-chart-3 hover:bg-chart-3/90' : ''}
-          >
-            {sharing ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : shared ? (
-              <Check size={16} />
-            ) : (
-              <Share2 size={16} />
-            )}
-            {sharing ? 'Đang tạo...' : shared ? 'Đã copy link!' : 'Chia sẻ'}
-          </Button>
-        )}
-      </div>
+      </header>
 
-      {/* Offer Selection */}
-      <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-base">Chọn offers để so sánh</CardTitle>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={selectAllOffers}>
-              Chọn tất cả
-            </Button>
-            <Button variant="outline" size="sm" onClick={clearSelection}>
-              Bỏ chọn
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {offers.map((offer) => {
-              const isSelected = selectedOfferIds.includes(offer.id);
-              return (
-                <Button
-                  key={offer.id}
-                  variant={isSelected ? 'secondary' : 'outline'}
-                  className={`gap-2 ${
-                    isSelected ? 'border-primary/50 bg-primary/10' : ''
-                  }`}
-                  onClick={() => toggleOfferSelection(offer.id)}
-                >
-                  <div
-                    className="w-5 h-5 rounded flex items-center justify-center text-white text-xs font-bold"
-                    style={{ background: offer.color }}
-                  >
-                    {offer.companyName.charAt(0)}
-                  </div>
-                  {offer.companyName}
-                  {isSelected && <CheckCircle2 size={14} className="text-primary" />}
-                </Button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">{data.title}</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Tạo ngày {new Date(data.createdAt).toLocaleDateString('vi-VN')}
+          </p>
+        </div>
 
-      {/* Annual Package Comparison */}
-      {selectedOffers.length >= 2 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp size={18} className="text-chart-3" />
-              So sánh Package cả năm
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {(() => {
-              const packages = selectedOffers.map((offer) => ({
-                offer,
-                ...calcAnnualPackage(offer),
-              }));
-              const maxTotal = Math.max(...packages.map((p) => p.total));
-              const winner = packages.find((p) => p.total === maxTotal && p.total > 0);
+        {/* Annual Package Comparison */}
+        {(() => {
+          const packages = offers.map((offer) => ({
+            offer,
+            ...calcAnnualPackage(offer),
+          }));
+          const maxTotal = Math.max(...packages.map((p) => p.total));
+          const hasPackageData = packages.some((p) => p.total > 0);
+          const winner = packages.find((p) => p.total === maxTotal && p.total > 0);
 
-              return (
+          if (!hasPackageData) return null;
+
+          return (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp size={18} className="text-chart-3" />
+                  So sánh Package cả năm
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-5">
                   {/* Visual bar comparison */}
                   <div className="space-y-3">
@@ -355,16 +310,11 @@ export default function CompareView() {
                           ))}
                         </TableRow>
                         <TableRow className="bg-muted/30 font-bold">
-                          <TableCell className="font-bold text-primary">
-                            Tổng Package/năm
-                          </TableCell>
+                          <TableCell className="font-bold text-primary">Tổng Package/năm</TableCell>
                           {packages.map((pkg) => {
                             const isMax = pkg.total === maxTotal && pkg.total > 0 && packages.filter((p) => p.total > 0).length >= 2;
                             return (
-                              <TableCell
-                                key={pkg.offer.id}
-                                className={`text-center font-bold ${isMax ? 'text-chart-3' : ''}`}
-                              >
+                              <TableCell key={pkg.offer.id} className={`text-center font-bold ${isMax ? 'text-chart-3' : ''}`}>
                                 {formatVND(pkg.total)}
                                 {isMax && (
                                   <Badge variant="secondary" className="ml-1 bg-chart-3/20 text-chart-3 text-xs">
@@ -375,7 +325,6 @@ export default function CompareView() {
                             );
                           })}
                         </TableRow>
-                        {/* Difference row */}
                         {winner && packages.filter((p) => p.total > 0).length >= 2 && (
                           <TableRow>
                             <TableCell className="text-muted-foreground text-xs">
@@ -402,14 +351,12 @@ export default function CompareView() {
                     <ScrollBar orientation="horizontal" />
                   </ScrollArea>
                 </div>
-              );
-            })()}
-          </CardContent>
-        </Card>
-      )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
-      {/* Comparison Table */}
-      {selectedOffers.length >= 2 && (
+        {/* Comparison Table */}
         <Card>
           <ScrollArea className="w-full">
             <Table>
@@ -418,7 +365,7 @@ export default function CompareView() {
                   <TableHead className="min-w-[200px] sticky left-0 bg-card z-10">
                     Tiêu chí
                   </TableHead>
-                  {selectedOffers.map((offer) => (
+                  {offers.map((offer) => (
                     <TableHead key={offer.id} className="text-center min-w-[180px]">
                       <div className="flex flex-col items-center gap-2 py-2">
                         <div
@@ -432,11 +379,6 @@ export default function CompareView() {
                           <p className="text-xs text-muted-foreground font-normal">
                             {offer.position}
                           </p>
-                          {offer.status === 'current' && (
-                            <Badge variant="secondary" className="mt-1 bg-chart-5/20 text-chart-5 text-xs">
-                              Hiện tại
-                            </Badge>
-                          )}
                         </div>
                       </div>
                     </TableHead>
@@ -448,7 +390,7 @@ export default function CompareView() {
                   <>
                     <TableRow key={group.key} className="bg-muted/30">
                       <TableCell
-                        colSpan={selectedOffers.length + 1}
+                        colSpan={offers.length + 1}
                         className="font-semibold text-sm"
                         style={{ color: group.color }}
                       >
@@ -466,9 +408,9 @@ export default function CompareView() {
                           <TableCell className="font-medium sticky left-0 bg-card z-10">
                             {criterion.name}
                           </TableCell>
-                          {selectedOffers.map((offer) => {
-                            const val = offer.values.find(
-                              (v) => v.criterionId === criterion.id
+                          {offers.map((offer) => {
+                            const val = (offer.values || []).find(
+                              (v: CriterionValue) => v.criterionId === criterion.id
                             );
                             const isHighest = salaryComp?.[offer.id] === 'highest';
 
@@ -518,15 +460,7 @@ export default function CompareView() {
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </Card>
-      )}
-
-      {selectedOffers.length < 2 && selectedOffers.length > 0 && (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">Chọn thêm ít nhất 1 offer nữa để so sánh</p>
-          </CardContent>
-        </Card>
-      )}
+      </div>
     </div>
   );
 }

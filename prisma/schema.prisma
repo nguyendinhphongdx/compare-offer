@@ -52,6 +52,19 @@ model CustomCriterion {
   @@map("of_custom_criteria")
 }
 
+model SharedComparison {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String?
+  offers    Json     // snapshot of selected offers
+  criteria  Json     // snapshot of criteria used
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime? @map("expires_at")
+
+  @@index([userId])
+  @@map("of_shared_comparisons")
+}
+
 model ChatMessage {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")

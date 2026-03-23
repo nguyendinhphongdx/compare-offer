@@ -38,6 +38,7 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  ExternalLink,
 } from 'lucide-react';
 
 const STATUS_OPTIONS = [
@@ -367,17 +368,30 @@ export default function OfferManager() {
                         open={expandedCategories.has(group.key)}
                         onOpenChange={() => toggleCategory(group.key)}
                       >
-                        <CollapsibleTrigger className="inline-flex items-center gap-2 text-primary font-semibold text-sm px-2 h-8 rounded-md hover:bg-accent/50 transition-colors">
-                          {expandedCategories.has(group.key) ? (
-                            <ChevronDown size={14} />
-                          ) : (
-                            <ChevronRight size={14} />
+                        <div className="flex items-center gap-2">
+                          <CollapsibleTrigger className="inline-flex items-center gap-2 text-primary font-semibold text-sm px-2 h-8 rounded-md hover:bg-accent/50 transition-colors">
+                            {expandedCategories.has(group.key) ? (
+                              <ChevronDown size={14} />
+                            ) : (
+                              <ChevronRight size={14} />
+                            )}
+                            {group.label}
+                            <span className="text-xs text-muted-foreground font-normal">
+                              ({group.items.length})
+                            </span>
+                          </CollapsibleTrigger>
+                          {group.key === 'compensation' && (
+                            <a
+                              href="https://candidate.talent.vn/salary-calculator"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-md hover:bg-accent/50"
+                            >
+                              <ExternalLink size={12} />
+                              Tính Gross ⇄ Net
+                            </a>
                           )}
-                          {group.label}
-                          <span className="text-xs text-muted-foreground font-normal">
-                            ({group.items.length})
-                          </span>
-                        </CollapsibleTrigger>
+                        </div>
                         <CollapsibleContent>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-5 mt-2">
                             {group.items.map((criterion) => {

@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStore } from '@/store/useStore';
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -34,7 +33,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar() {
-  const { sidebarCollapsed, toggleSidebar, offers } = useStore();
+  const { sidebarCollapsed, toggleSidebar, offers, user } = useStore();
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
 
@@ -108,36 +107,59 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Theme, Logout & Collapse Toggle */}
-      <div className="px-3 pb-4 space-y-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-full text-muted-foreground hover:text-foreground"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        >
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          {!sidebarCollapsed && (
-            <span className="ml-2 text-sm">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-          )}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-full text-muted-foreground hover:text-destructive"
-          onClick={() => signOut()}
-        >
-          <LogOut size={18} />
-          {!sidebarCollapsed && <span className="ml-2 text-sm">Đăng xuất</span>}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-full text-muted-foreground hover:text-foreground"
-          onClick={toggleSidebar}
-        >
-          {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </Button>
+      {/* Footer */}
+      <div className="px-3 pb-3 space-y-1">
+        <Separator className="bg-sidebar-border mb-2" />
+
+        {/* Theme & Collapse row */}
+        <div className={`flex items-center ${sidebarCollapsed ? 'flex-col gap-1' : 'justify-between'}`}>
+          <button
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 transition-colors"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          >
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/50 transition-colors"
+            onClick={toggleSidebar}
+            title={sidebarCollapsed ? 'Mở rộng' : 'Thu gọn'}
+          >
+            {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        </div>
+
+        {/* User Profile */}
+        {user && (
+          <div
+            className={`group flex items-center gap-3 rounded-lg p-2 cursor-pointer transition-colors hover:bg-sidebar-accent/50 ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+            onClick={() => signOut()}
+            title="Đăng xuất"
+          >
+            {user.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user.name || 'Avatar'}
+                className="shrink-0 w-8 h-8 rounded-full object-cover ring-2 ring-sidebar-border"
+              />
+            ) : (
+              <div className="shrink-0 w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-sm font-semibold ring-2 ring-primary/20">
+                {(user.name || user.email)[0].toUpperCase()}
+              </div>
+            )}
+            {!sidebarCollapsed && (
+              <div className="min-w-0 flex-1 animate-fade-in">
+                <p className="text-sm font-medium truncate">{user.name || 'User'}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+              </div>
+            )}
+            {!sidebarCollapsed && (
+              <LogOut size={15} className="shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            )}
+          </div>
+        )}
       </div>
     </aside>
   );

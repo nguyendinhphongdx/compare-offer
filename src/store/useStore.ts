@@ -5,10 +5,19 @@ import { v4 as uuidv4 } from 'uuid';
 import { Offer, Criterion, CriterionValue, ChatMessage } from '@/types';
 import { DEFAULT_CRITERIA, OFFER_COLORS } from '@/data/criteria';
 
+interface AppUser {
+  name: string | null;
+  email: string;
+  avatar: string | null;
+}
+
 interface AppState {
   // Data loading
   isLoaded: boolean;
   loadFromDb: () => Promise<void>;
+
+  // User
+  user: AppUser | null;
 
 
 
@@ -140,16 +149,18 @@ export const useStore = create<AppState>()((set, get) => ({
   loadFromDb: async () => {
     if (get().isLoaded) return;
     try {
-      const [offersRaw, criteriaRaw, messagesRaw] = await Promise.all([
+      const [offersRaw, criteriaRaw, messagesRaw, userRaw] = await Promise.all([
         api<DbOffer[]>('/api/offers'),
         api<DbCriterion[]>('/api/criteria'),
         api<DbChatMessage[]>('/api/messages'),
+        api<AppUser | null>('/api/user'),
       ]);
       const customCriteria = criteriaRaw.map(toCriterion);
       set({
         offers: offersRaw.map(toOffer),
         criteria: [...DEFAULT_CRITERIA, ...customCriteria],
         chatMessages: messagesRaw.map(toChatMessage),
+        user: userRaw,
         isLoaded: true,
       });
     } catch (err) {
@@ -157,6 +168,9 @@ export const useStore = create<AppState>()((set, get) => ({
       set({ isLoaded: true }); // proceed with defaults
     }
   },
+
+  // User
+  user: null,
 
 
   // Offers

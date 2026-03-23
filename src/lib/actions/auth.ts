@@ -25,6 +25,12 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
     return { error: 'Mật khẩu phải có ít nhất 6 ký tự' }
   }
 
+  // Check if email already exists
+  const existingUser = await prisma.user.findUnique({ where: { email } })
+  if (existingUser) {
+    return { error: 'Email này đã được đăng ký. Vui lòng đăng nhập hoặc sử dụng email khác.' }
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -40,14 +46,12 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
 
   if (data.user) {
     try {
-      await prisma.user.upsert({
-        where: { supabaseId: data.user.id },
-        create: {
+      await prisma.user.create({
+        data: {
           supabaseId: data.user.id,
           email: data.user.email!,
           name,
         },
-        update: {},
       })
     } catch (dbError) {
       console.error('Failed to create user in database:', dbError)
@@ -79,17 +83,22 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
   // Sync user with Prisma if not exists
   if (data.user) {
     try {
+      const name = data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User'
       await prisma.user.upsert({
         where: { supabaseId: data.user.id },
         create: {
           supabaseId: data.user.id,
           email: data.user.email!,
-          name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User',
+          name,
         },
-        update: {},
+        update: { name },
       })
-    } catch (dbError) {
-      console.error('Failed to sync user:', dbError)
+    } catch {
+      const name = data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User'
+      await prisma.user.update({
+        where: { email: data.user.email! },
+        data: { supabaseId: data.user.id, name },
+      }).catch(() => {})
     }
   }
 

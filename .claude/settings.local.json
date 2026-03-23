@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /d/Code/VibeCoding/compare-offer -type f -name *auth*)",
+      "Bash(ls -laR /d/Code/VibeCoding/compare-offer/src/app/\\\\\\(auth\\\\\\)/)",
+      "Bash(ls -laR /d/Code/VibeCoding/compare-offer/src/app/\\\\\\(main\\\\\\)/)",
+      "Bash(npx tsc:*)",
+      "Bash(find \"/d/Code/VibeCoding/compare-offer/src/app/\\(main\\)/compare\" -type f -name \"*.ts*\")",
+      "Bash(find /d/Code/VibeCoding/compare-offer/src/types -type f -name *.ts)",
+      "Bash(npx prisma:*)",
+      "Bash(npx next:*)",
+      "Bash(ls d:/Code/VibeCoding/compare-offer/src/app/api/ d:/Code/VibeCoding/compare-offer/src/app/share/ d:/Code/VibeCoding/compare-offer/src/app/\\\\\\(main\\\\\\)/ d:/Code/VibeCoding/compare-offer/src/app/\\\\\\(auth\\\\\\)/)"
+    ]
+  }
+}
