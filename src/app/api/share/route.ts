@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { title, offerIds } = await request.json();
+  const { title, offerIds, aiEvaluation } = await request.json();
 
   if (!offerIds || offerIds.length < 2) {
     return NextResponse.json({ error: 'Cần ít nhất 2 offers' }, { status: 400 });
@@ -26,12 +26,29 @@ export async function POST(request: NextRequest) {
     where: { userId },
   });
 
-  const shared = await prisma.sharedComparison.create({
-    data: {
+  // Generate hash from sorted offer IDs for upsert
+  const offersHash = [...offerIds].sort().join('|');
+  const defaultTitle = title || `So sánh ${offers.map((o) => o.companyName).join(' vs ')}`;
+  const offersJson = JSON.parse(JSON.stringify(offers));
+  const criteriaJson = JSON.parse(JSON.stringify(customCriteria));
+
+  const shared = await prisma.sharedComparison.upsert({
+    where: {
+      userId_offersHash: { userId, offersHash },
+    },
+    create: {
       userId,
-      title: title || `So sánh ${offers.map((o) => o.companyName).join(' vs ')}`,
-      offers: JSON.parse(JSON.stringify(offers)),
-      criteria: JSON.parse(JSON.stringify(customCriteria)),
+      offersHash,
+      title: defaultTitle,
+      offers: offersJson,
+      criteria: criteriaJson,
+      aiEvaluation: aiEvaluation || null,
+    },
+    update: {
+      title: defaultTitle,
+      offers: offersJson,
+      criteria: criteriaJson,
+      aiEvaluation: aiEvaluation || null,
     },
   });
 

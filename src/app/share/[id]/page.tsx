@@ -16,14 +16,18 @@ import {
 } from '@/components/ui/table';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, XCircle, Briefcase, TrendingUp, Trophy } from 'lucide-react';
+import { CheckCircle2, XCircle, Briefcase, TrendingUp, Trophy, Sparkles } from 'lucide-react';
 import type { Offer, Criterion, CriterionValue } from '@/types';
+import { Streamdown } from 'streamdown';
+import { mermaid } from '@streamdown/mermaid';
+import { code } from '@streamdown/code';
 
 interface SharedData {
   id: string;
   title: string;
   offers: Offer[];
   criteria: Array<{ id: string; name: string; category: string; type: string; description?: string }>;
+  aiEvaluation: string | null;
   createdAt: string;
 }
 
@@ -460,6 +464,25 @@ export default function SharedComparePage() {
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </Card>
+
+        {/* AI Evaluation */}
+        {data.aiEvaluation && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles size={18} className="text-chart-4" />
+                AI Đánh giá
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose dark:prose-invert prose-sm max-w-none">
+                <Streamdown plugins={{ mermaid, code }} mermaid={{ config: { theme: 'dark' } }}>
+                  {data.aiEvaluation}
+                </Streamdown>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

@@ -70,14 +70,18 @@ model CustomCriterion {
 }
 
 model SharedComparison {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  title     String?
-  offers    Json     // snapshot of selected offers
-  criteria  Json     // snapshot of criteria used
-  createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime? @map("expires_at")
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  offersHash   String   @map("offers_hash") // sorted offer IDs joined, for upsert
+  title        String?
+  offers       Json     // snapshot of selected offers
+  criteria     Json     // snapshot of criteria used
+  aiEvaluation String?  @map("ai_evaluation") // AI evaluation result markdown
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  expiresAt    DateTime? @map("expires_at")
 
+  @@unique([userId, offersHash])
   @@index([userId])
   @@map("of_shared_comparisons")
 }

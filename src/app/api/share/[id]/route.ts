@@ -24,6 +24,7 @@ export async function GET(
     title: shared.title,
     offers: shared.offers,
     criteria: shared.criteria,
+    aiEvaluation: shared.aiEvaluation,
     createdAt: shared.createdAt,
   });
 }

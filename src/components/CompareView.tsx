@@ -16,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { CheckCircle2, XCircle, ArrowRight, Share2, Check, Loader2, TrendingUp, Trophy, Sparkles } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, Globe, Copy, Check, Loader2, TrendingUp, Trophy, Sparkles } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { Streamdown } from 'streamdown';
 import { mermaid } from '@streamdown/mermaid';
@@ -40,8 +40,9 @@ export default function CompareView() {
     clearSelection,
   } = useStore();
 
-  const [sharing, setSharing] = useState(false);
-  const [shared, setShared] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [copied, setCopied] = useState(false);
   const [aiResult, setAiResult] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -126,27 +127,33 @@ export default function CompareView() {
     }
   };
 
-  const handleShare = async () => {
+  const handlePublish = async () => {
     if (selectedOffers.length < 2) return;
-    setSharing(true);
+    setPublishing(true);
     try {
       const res = await fetch('/api/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ offerIds: selectedOffers.map((o) => o.id) }),
+        body: JSON.stringify({
+          offerIds: selectedOffers.map((o) => o.id),
+          aiEvaluation: aiResult || null,
+        }),
       });
       const data = await res.json();
       if (data.id) {
-        const url = `${window.location.origin}/share/${data.id}`;
-        await navigator.clipboard.writeText(url);
-        setShared(true);
-        setTimeout(() => setShared(false), 3000);
+        setShareUrl(`${window.location.origin}/share/${data.id}`);
       }
     } catch {
       // silently fail
     } finally {
-      setSharing(false);
+      setPublishing(false);
     }
+  };
+
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const getOfferValue = (offer: typeof offers[0], criterionId: string) => {
@@ -177,12 +184,6 @@ export default function CompareView() {
   const formatVND = (num: number) => {
     if (num === 0) return '—';
     return new Intl.NumberFormat('vi-VN').format(num) + ' ₫';
-  };
-
-  const formatMillions = (num: number) => {
-    if (num === 0) return '—';
-    const m = num / 1_000_000;
-    return m % 1 === 0 ? `${m}M` : `${m.toFixed(1)}M`;
   };
 
   const groupedCriteria = Object.entries(CATEGORY_LABELS)
@@ -263,21 +264,31 @@ export default function CompareView() {
           <p className="text-muted-foreground mt-1">Chọn các offer để so sánh chi tiết</p>
         </div>
         {selectedOffers.length >= 2 && (
-          <Button
-            variant={shared ? 'default' : 'outline'}
-            onClick={handleShare}
-            disabled={sharing}
-            className={shared ? 'bg-chart-3 hover:bg-chart-3/90' : ''}
-          >
-            {sharing ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : shared ? (
-              <Check size={16} />
-            ) : (
-              <Share2 size={16} />
+          <div className="flex items-center gap-2">
+            <Button
+              variant={shareUrl ? 'default' : 'outline'}
+              onClick={handlePublish}
+              disabled={publishing}
+              className={shareUrl ? 'bg-chart-3 hover:bg-chart-3/90' : ''}
+            >
+              {publishing ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Globe size={16} />
+              )}
+              {publishing ? 'Đang publish...' : shareUrl ? 'Đã public' : 'Public'}
+            </Button>
+            {shareUrl && (
+              <Button
+                variant="outline"
+                onClick={handleCopyLink}
+                className={copied ? 'text-chart-3 border-chart-3/50' : ''}
+              >
+                {copied ? <Check size={16} /> : <Copy size={16} />}
+                {copied ? 'Đã copy!' : 'Copy link'}
+              </Button>
             )}
-            {sharing ? 'Đang tạo...' : shared ? 'Đã copy link!' : 'Chia sẻ'}
-          </Button>
+          </div>
         )}
       </div>
 
