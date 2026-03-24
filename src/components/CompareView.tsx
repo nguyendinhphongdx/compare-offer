@@ -16,8 +16,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { CheckCircle2, XCircle, ArrowRight, Share2, Check, Loader2, TrendingUp, Trophy } from 'lucide-react';
-import { useState } from 'react';
+import { CheckCircle2, XCircle, ArrowRight, Share2, Check, Loader2, TrendingUp, Trophy, Sparkles } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Streamdown } from 'streamdown';
+import { mermaid } from '@streamdown/mermaid';
+import { code } from '@streamdown/code';
+
+const SCHEDULE_LABELS: Record<string, string> = {
+  mon_fri: 'T2 - T6',
+  mon_sat_half: 'T2 - Sáng T7',
+  mon_sat: 'T2 - T7',
+  shift: 'Ca kíp',
+  other: 'Khác',
+};
 
 export default function CompareView() {
   const {
@@ -31,8 +42,89 @@ export default function CompareView() {
 
   const [sharing, setSharing] = useState(false);
   const [shared, setShared] = useState(false);
+  const [aiResult, setAiResult] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   const selectedOffers = offers.filter((o) => selectedOfferIds.includes(o.id));
+
+  const buildEvalContext = useCallback(() => {
+    const lines: string[] = [`So sánh ${selectedOffers.length} offers:\n`];
+    selectedOffers.forEach((offer, i) => {
+      const status =
+        offer.status === 'current' ? 'Công ty hiện tại' :
+        offer.status === 'negotiating' ? 'Đang deal' :
+        offer.status === 'accepted' ? 'Đã nhận' :
+        offer.status === 'declined' ? 'Từ chối' : 'Đang chờ';
+      lines.push(`--- Offer ${i + 1}: ${offer.companyName} (${offer.position}) [${status}] ---`);
+      const grouped: Record<string, string[]> = {};
+      for (const val of offer.values) {
+        if (val.value === '' || val.value === 0 || val.value === false) continue;
+        const criterion = criteria.find((c) => c.id === val.criterionId);
+        if (criterion) {
+          const cat = CATEGORY_LABELS[criterion.category] || criterion.category;
+          if (!grouped[cat]) grouped[cat] = [];
+          let displayVal: string;
+          if (criterion.type === 'salary') displayVal = new Intl.NumberFormat('vi-VN').format(Number(val.value)) + ' VNĐ';
+          else if (criterion.type === 'boolean') displayVal = val.value ? 'Có' : 'Không';
+          else if (criterion.type === 'rating') displayVal = `${val.value}/5`;
+          else if (criterion.type === 'work_schedule') displayVal = SCHEDULE_LABELS[String(val.value)] || String(val.value);
+          else displayVal = String(val.value);
+          grouped[cat].push(`  ${criterion.name}: ${displayVal}${val.note ? ` (Ghi chú: ${val.note})` : ''}`);
+        } else if (val.criterionId === '_compensation_note' && val.value) {
+          if (!grouped['Ghi chú lương thưởng']) grouped['Ghi chú lương thưởng'] = [];
+          grouped['Ghi chú lương thưởng'].push(`  ${val.value}`);
+        }
+      }
+      for (const [cat, items] of Object.entries(grouped)) {
+        lines.push(`[${cat}]`);
+        lines.push(...items);
+      }
+      lines.push('');
+    });
+    return lines.join('\n');
+  }, [selectedOffers, criteria]);
+
+  const handleAiEvaluate = async () => {
+    setAiLoading(true);
+    setAiResult('');
+    try {
+      const res = await fetch('/api/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: buildEvalContext() }),
+      });
+      if (!res.ok) throw new Error('API error');
+      const reader = res.body?.getReader();
+      if (!reader) return;
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let result = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.text) {
+                result += parsed.text;
+                setAiResult(result);
+              }
+            } catch { /* skip */ }
+          }
+        }
+      }
+    } catch {
+      setAiResult('Không thể kết nối AI. Vui lòng thử lại.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleShare = async () => {
     if (selectedOffers.length < 2) return;
@@ -397,6 +489,22 @@ export default function CompareView() {
                             })}
                           </TableRow>
                         )}
+                        {/* Compensation notes row */}
+                        {packages.some((pkg) => pkg.offer.values.find((v) => v.criterionId === '_compensation_note' && v.value)) && (
+                          <TableRow>
+                            <TableCell className="text-muted-foreground text-xs align-top">
+                              Ghi chú
+                            </TableCell>
+                            {packages.map((pkg) => {
+                              const note = pkg.offer.values.find((v) => v.criterionId === '_compensation_note')?.value;
+                              return (
+                                <TableCell key={pkg.offer.id} className="text-xs text-muted-foreground whitespace-pre-line">
+                                  {note ? String(note) : '—'}
+                                </TableCell>
+                              );
+                            })}
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
                     <ScrollBar orientation="horizontal" />
@@ -517,6 +625,51 @@ export default function CompareView() {
             </Table>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
+        </Card>
+      )}
+
+      {/* AI Evaluation Section */}
+      {selectedOffers.length >= 2 && (
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles size={18} className="text-chart-4" />
+              AI Đánh giá
+            </CardTitle>
+            <Button
+              variant={aiResult ? 'outline' : 'default'}
+              size="sm"
+              onClick={handleAiEvaluate}
+              disabled={aiLoading}
+            >
+              {aiLoading ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Sparkles size={14} />
+              )}
+              {aiLoading ? 'Đang phân tích...' : aiResult ? 'Đánh giá lại' : 'Bắt đầu đánh giá'}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {!aiResult && !aiLoading && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                AI sẽ phân tích toàn bộ dữ liệu, tiêu chí, ghi chú của các offer được chọn và đưa ra đánh giá tổng quan.
+              </p>
+            )}
+            {(aiResult || aiLoading) && (
+              <div className="prose dark:prose-invert prose-sm max-w-none">
+                <Streamdown plugins={{ mermaid, code }} mermaid={{ config: { theme: 'dark' } }}>
+                  {aiResult || ''}
+                </Streamdown>
+                {aiLoading && !aiResult && (
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+                    <Loader2 size={14} className="animate-spin" />
+                    Đang phân tích dữ liệu...
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
         </Card>
       )}
 

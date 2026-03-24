@@ -419,7 +419,7 @@ export default function OfferManager() {
                                     <StarRating
                                       value={Number(currentValue?.value || 0)}
                                       onChange={(v) =>
-                                        updateOfferValue(offer.id, criterion.id, v)
+                                        updateOfferValue(offer.id, criterion.id, v, currentValue?.note)
                                       }
                                     />
                                   ) : criterion.type === 'boolean' ? (
@@ -433,7 +433,7 @@ export default function OfferManager() {
                                             : ''
                                         }
                                         onClick={() =>
-                                          updateOfferValue(offer.id, criterion.id, true)
+                                          updateOfferValue(offer.id, criterion.id, true, currentValue?.note)
                                         }
                                       >
                                         Có
@@ -447,7 +447,7 @@ export default function OfferManager() {
                                             : ''
                                         }
                                         onClick={() =>
-                                          updateOfferValue(offer.id, criterion.id, false)
+                                          updateOfferValue(offer.id, criterion.id, false, currentValue?.note)
                                         }
                                       >
                                         Không
@@ -478,7 +478,7 @@ export default function OfferManager() {
                                               : ''
                                           }
                                           onClick={() =>
-                                            updateOfferValue(offer.id, criterion.id, opt.value)
+                                            updateOfferValue(offer.id, criterion.id, opt.value, currentValue?.note)
                                           }
                                         >
                                           {opt.icon} {opt.label}
@@ -500,7 +500,8 @@ export default function OfferManager() {
                                         updateOfferValue(
                                           offer.id,
                                           criterion.id,
-                                          Number(raw) || 0
+                                          Number(raw) || 0,
+                                          currentValue?.note
                                         );
                                       }}
                                     />
@@ -509,7 +510,7 @@ export default function OfferManager() {
                                       placeholder={criterion.description}
                                       value={(currentValue?.value as string) || ''}
                                       onChange={(e) =>
-                                        updateOfferValue(offer.id, criterion.id, e.target.value)
+                                        updateOfferValue(offer.id, criterion.id, e.target.value, currentValue?.note)
                                       }
                                     />
                                   )}
@@ -517,6 +518,22 @@ export default function OfferManager() {
                               );
                             })}
                           </div>
+                          {group.key === 'compensation' && (
+                            <div className="ml-5 mt-3">
+                              <Label className="text-sm text-muted-foreground">Ghi chú thêm về lương thưởng</Label>
+                              <Textarea
+                                rows={2}
+                                placeholder="VD: Lương review 2 lần/năm, thưởng KPI theo quý..."
+                                className="mt-1 text-sm"
+                                value={
+                                  (offer.values.find((v) => v.criterionId === '_compensation_note')?.value as string) || ''
+                                }
+                                onChange={(e) =>
+                                  updateOfferValue(offer.id, '_compensation_note', e.target.value)
+                                }
+                              />
+                            </div>
+                          )}
                         </CollapsibleContent>
                       </Collapsible>
                     ))}

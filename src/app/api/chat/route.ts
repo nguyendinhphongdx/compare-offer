@@ -1,5 +1,5 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest } from 'next/server';
+import { resolveProvider, type AiMessage } from '@/lib/ai';
 
 const SYSTEM_PROMPT = `Bạn là OfferLens AI - trợ lý thông minh chuyên tư vấn về so sánh job offers và nhảy việc.
 
@@ -30,10 +30,10 @@ Công cụ trực quan:
 - Chỉ dùng diagram khi thực sự cần thiết và có giá trị trực quan, không lạm dụng`;
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+  const resolved = await resolveProvider();
+  if ('error' in resolved) {
     return new Response(
-      JSON.stringify({ error: 'Chưa cấu hình GEMINI_API_KEY. Thêm API key vào file .env.local' }),
+      JSON.stringify({ error: resolved.error }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -41,56 +41,23 @@ export async function POST(req: NextRequest) {
   try {
     const { message, context, history } = await req.json();
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    // Build messages array
+    const messages: AiMessage[] = [];
 
-    // Build chat history: system prompt + optional context + previous messages
-    const chatHistory: { role: 'user' | 'model'; parts: { text: string }[] }[] = [
-      { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-      { role: 'model', parts: [{ text: 'Tôi là OfferLens AI, sẵn sàng tư vấn về các offer của bạn!' }] },
-    ];
-
-    // Add offers data context on first message
     if (context) {
-      chatHistory.push(
-        { role: 'user', parts: [{ text: `[DỮ LIỆU OFFERS HIỆN TẠI]\n${context}` }] },
-        { role: 'model', parts: [{ text: 'Đã nhận dữ liệu offers. Tôi sẵn sàng phân tích!' }] },
-      );
+      messages.push({ role: 'user', content: `[DỮ LIỆU OFFERS HIỆN TẠI]\n${context}` });
+      messages.push({ role: 'assistant', content: 'Đã nhận dữ liệu offers. Tôi sẵn sàng phân tích!' });
     }
 
-    // Append previous conversation history
     if (history && Array.isArray(history)) {
       for (const msg of history) {
-        chatHistory.push({
-          role: msg.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: msg.content }],
-        });
+        messages.push({ role: msg.role === 'assistant' ? 'assistant' : 'user', content: msg.content });
       }
     }
 
-    const chat = model.startChat({ history: chatHistory });
+    messages.push({ role: 'user', content: message });
 
-    const result = await chat.sendMessageStream(message);
-
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of result.stream) {
-            const text = chunk.text();
-            if (text) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
-            }
-          }
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          controller.close();
-        } catch (err) {
-          const errMsg = err instanceof Error ? err.message : 'Stream error';
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: errMsg })}\n\n`));
-          controller.close();
-        }
-      },
-    });
+    const { stream } = await resolved.strategy.chat(messages, SYSTEM_PROMPT);
 
     return new Response(stream, {
       headers: {
@@ -101,9 +68,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Gemini API error:', errMsg);
+    console.error('AI API error:', errMsg);
     return new Response(
-      JSON.stringify({ error: `Lỗi khi gọi Gemini API: ${errMsg}` }),
+      JSON.stringify({ error: `Lỗi AI: ${errMsg}` }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

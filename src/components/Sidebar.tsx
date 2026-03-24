@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
   LogOut,
+  Settings,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { signOut } from '@/lib/actions/auth';
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { href: '/charts', label: 'Biểu đồ', icon: <BarChart3 size={20} /> },
   { href: '/interview', label: 'Hướng dẫn PV', icon: <HelpCircle size={20} /> },
   { href: '/assistant', label: 'AI Tư vấn', icon: <MessageCircle size={20} /> },
+  { href: '/settings', label: 'Cài đặt', icon: <Settings size={20} /> },
 ];
 
 export default function Sidebar() {

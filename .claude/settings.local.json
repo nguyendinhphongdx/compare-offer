@@ -9,7 +9,8 @@
       "Bash(find /d/Code/VibeCoding/compare-offer/src/types -type f -name *.ts)",
       "Bash(npx prisma:*)",
       "Bash(npx next:*)",
-      "Bash(ls d:/Code/VibeCoding/compare-offer/src/app/api/ d:/Code/VibeCoding/compare-offer/src/app/share/ d:/Code/VibeCoding/compare-offer/src/app/\\\\\\(main\\\\\\)/ d:/Code/VibeCoding/compare-offer/src/app/\\\\\\(auth\\\\\\)/)"
+      "Bash(ls d:/Code/VibeCoding/compare-offer/src/app/api/ d:/Code/VibeCoding/compare-offer/src/app/share/ d:/Code/VibeCoding/compare-offer/src/app/\\\\\\(main\\\\\\)/ d:/Code/VibeCoding/compare-offer/src/app/\\\\\\(auth\\\\\\)/)",
+      "Bash(pnpm add:*)"
     ]
   }
 }

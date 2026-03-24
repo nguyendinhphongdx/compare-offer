@@ -9,13 +9,30 @@ datasource db {
 
 // Shared User table (managed by LMS, read/upsert only from OfferLens)
 model User {
-  id         String  @id @default(cuid())
-  supabaseId String  @unique
-  email      String  @unique
-  name       String?
-  avatar     String?
+  id           String  @id @default(cuid())
+  supabaseId   String  @unique
+  email        String  @unique
+  name         String?
+  avatar       String?
+  useSystemKey Boolean @default(true) @map("use_system_key")
 
   @@map("User")
+}
+
+model ApiKey {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  provider  String   // gemini, openai, claude
+  label     String?  // user-friendly name, e.g. "Gemini cá nhân"
+  apiKey    String   @map("api_key")
+  isDefault Boolean  @default(false) @map("is_default")
+  isValid   Boolean? @map("is_valid") // null = untested, true/false = tested
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([userId, provider])
+  @@map("of_api_keys")
 }
 
 model Offer {
