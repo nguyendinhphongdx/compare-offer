@@ -200,7 +200,7 @@ export default function ChartsView() {
       </div>
 
       {/* ─── ROW 0: Verdict Cards ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {verdicts.map((v) => (
           <Card key={v.icon} className={v.winnerId ? 'border-border' : 'opacity-60'}>
             <CardContent className="pt-5 pb-4">
@@ -228,7 +228,7 @@ export default function ChartsView() {
       </div>
 
       {/* ─── Dashboard Grid ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Widget 1: Total Annual Compensation */}
         <Card>
           <CardHeader className="pb-2">

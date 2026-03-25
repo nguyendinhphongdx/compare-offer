@@ -258,15 +258,16 @@ export default function CompareView() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">So sánh Offers</h1>
-          <p className="text-muted-foreground mt-1">Chọn các offer để so sánh chi tiết</p>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">So sánh Offers</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Chọn các offer để so sánh chi tiết</p>
         </div>
         {selectedOffers.length >= 2 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant={shareUrl ? 'default' : 'outline'}
+              size="sm"
               onClick={handlePublish}
               disabled={publishing}
               className={shareUrl ? 'bg-chart-3 hover:bg-chart-3/90' : ''}
@@ -276,16 +277,17 @@ export default function CompareView() {
               ) : (
                 <Globe size={16} />
               )}
-              {publishing ? 'Đang publish...' : shareUrl ? 'Đã public' : 'Public'}
+              {publishing ? 'Đang...' : shareUrl ? 'Đã public' : 'Public'}
             </Button>
             {shareUrl && (
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleCopyLink}
                 className={copied ? 'text-chart-3 border-chart-3/50' : ''}
               >
                 {copied ? <Check size={16} /> : <Copy size={16} />}
-                {copied ? 'Đã copy!' : 'Copy link'}
+                {copied ? 'Đã copy!' : 'Copy'}
               </Button>
             )}
           </div>
@@ -294,7 +296,7 @@ export default function CompareView() {
 
       {/* Offer Selection */}
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
+        <CardHeader className="flex-col sm:flex-row items-start sm:items-center justify-between gap-2 space-y-0 pb-3">
           <CardTitle className="text-base">Chọn offers để so sánh</CardTitle>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={selectAllOffers}>

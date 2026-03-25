@@ -134,17 +134,17 @@ export default function OfferManager() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Quản lý Offers</h1>
-          <p className="text-muted-foreground mt-1">Thêm, chỉnh sửa và đánh giá các offer</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Quản lý Offers</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Thêm, chỉnh sửa và đánh giá các offer</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setShowAddCriterion(!showAddCriterion)}>
-            <Plus size={16} /> Thêm tiêu chí
+        <div className="flex gap-2 sm:gap-3 shrink-0">
+          <Button variant="outline" size="sm" className="sm:size-default" onClick={() => setShowAddCriterion(!showAddCriterion)}>
+            <Plus size={16} /> <span className="hidden sm:inline">Thêm tiêu chí</span><span className="sm:hidden">Tiêu chí</span>
           </Button>
-          <Button onClick={() => { resetForm(); setShowForm(true); }}>
-            <Plus size={16} /> Thêm Offer
+          <Button size="sm" className="sm:size-default" onClick={() => { resetForm(); setShowForm(true); }}>
+            <Plus size={16} /> <span className="hidden sm:inline">Thêm Offer</span><span className="sm:hidden">Thêm</span>
           </Button>
         </div>
       </div>
@@ -154,7 +154,7 @@ export default function OfferManager() {
         <Card className="animate-fade-in">
           <CardContent className="pt-6">
             <h3 className="font-semibold mb-3">Thêm tiêu chí tùy chỉnh</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               <Input
                 placeholder="Tên tiêu chí"
                 value={newCriterion.name}
@@ -298,18 +298,18 @@ export default function OfferManager() {
             <Card key={offer.id}>
               {/* Offer Header */}
               <div
-                className="flex items-center gap-4 p-5 cursor-pointer hover:bg-accent/30 transition-colors rounded-t-lg"
+                className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 cursor-pointer hover:bg-accent/30 transition-colors rounded-t-lg"
                 onClick={() => setExpandedOffer(expandedOffer === offer.id ? null : offer.id)}
               >
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg"
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center font-bold text-white text-base sm:text-lg shrink-0"
                   style={{ background: offer.color }}
                 >
                   {offer.companyName.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3">
-                    <h3 className="font-semibold text-lg">{offer.companyName}</h3>
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                    <h3 className="font-semibold text-base sm:text-lg truncate">{offer.companyName}</h3>
                     <Badge
                       variant={
                         offer.status === 'accepted'

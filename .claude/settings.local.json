@@ -10,7 +10,13 @@
       "Bash(npx prisma:*)",
       "Bash(npx next:*)",
       "Bash(ls d:/Code/VibeCoding/compare-offer/src/app/api/ d:/Code/VibeCoding/compare-offer/src/app/share/ d:/Code/VibeCoding/compare-offer/src/app/\\\\\\(main\\\\\\)/ d:/Code/VibeCoding/compare-offer/src/app/\\\\\\(auth\\\\\\)/)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(npm install:*)",
+      "Bash(npx --yes sharp-cli --version)",
+      "Bash(npx --yes sharp-cli -i public/icons/icon.svg -o public/icons/icon-192x192.png --width 192 --height 192)",
+      "Bash(npx sharp-cli:*)",
+      "Bash(./node_modules/.bin/tsc --noEmit next.config.ts)"
     ]
   }
 }

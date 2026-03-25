@@ -68,14 +68,14 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Tổng quan</h1>
-          <p className="text-muted-foreground mt-1">Quản lý và theo dõi các offer của bạn</p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Tổng quan</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Quản lý và theo dõi các offer của bạn</p>
         </div>
-        <Link href="/offers">
-          <Button>
-            <Plus size={16} /> Thêm Offer
+        <Link href="/offers" className="shrink-0">
+          <Button size="sm" className="sm:size-default">
+            <Plus size={16} /> <span className="hidden sm:inline">Thêm Offer</span><span className="sm:hidden">Thêm</span>
           </Button>
         </Link>
       </div>

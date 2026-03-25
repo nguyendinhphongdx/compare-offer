@@ -169,21 +169,21 @@ export default function AIAssistant() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-48px)] animate-fade-in">
+    <div className="flex flex-col h-[calc(100vh-88px)] md:h-[calc(100vh-48px)] animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Sparkles size={24} className="text-primary" />
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Sparkles size={20} className="text-primary shrink-0 sm:w-6 sm:h-6" />
             AI Tư vấn
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm hidden sm:block">
             Powered by Gemini — phân tích và tư vấn offers thông minh
           </p>
         </div>
         {chatMessages.length > 0 && (
-          <Button variant="outline" size="sm" onClick={clearChat}>
-            <Trash2 size={14} /> Xóa lịch sử
+          <Button variant="outline" size="sm" onClick={clearChat} className="shrink-0">
+            <Trash2 size={14} /> <span className="hidden sm:inline">Xóa lịch sử</span><span className="sm:hidden">Xóa</span>
           </Button>
         )}
       </div>
@@ -210,7 +210,7 @@ export default function AIAssistant() {
               <p className="text-muted-foreground text-sm mb-6 max-w-md mx-auto">
                 Tôi là AI trợ lý (Gemini), sẵn sàng giúp bạn phân tích, so sánh và đưa ra quyết định về các offer.
               </p>
-              <div className="flex flex-wrap gap-2 justify-center max-w-lg mx-auto">
+              <div className="flex flex-wrap gap-2 justify-center max-w-lg mx-auto px-2">
                 {SUGGESTED_PROMPTS.map((prompt, idx) => (
                   <Button
                     key={idx}
@@ -242,7 +242,7 @@ export default function AIAssistant() {
                 </Avatar>
               )}
               <Card
-                className={`max-w-[75%] px-4 py-3 ${
+                className={`max-w-[85%] sm:max-w-[75%] px-3 sm:px-4 py-2.5 sm:py-3 ${
                   msg.role === 'user'
                     ? 'bg-primary text-primary-foreground rounded-br-sm'
                     : 'rounded-bl-sm'

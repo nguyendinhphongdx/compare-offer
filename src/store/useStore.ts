@@ -48,6 +48,8 @@ interface AppState {
   // Sidebar
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
+  mobileSidebarOpen: boolean;
+  setMobileSidebarOpen: (open: boolean) => void;
 }
 
 // ─── API helpers (fire-and-forget for writes, await for reads) ───
@@ -281,4 +283,6 @@ export const useStore = create<AppState>()((set, get) => ({
   // Sidebar
   sidebarCollapsed: false,
   toggleSidebar: () => set({ sidebarCollapsed: !get().sidebarCollapsed }),
+  mobileSidebarOpen: false,
+  setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
 }));

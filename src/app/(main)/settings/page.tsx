@@ -165,7 +165,7 @@ export default function SettingsPage() {
   })).filter((g) => g.keys.length > 0);
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-2xl">
+    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Cài đặt</h1>
         <p className="text-muted-foreground mt-1">Quản lý API keys cho các dịch vụ AI</p>
@@ -225,7 +225,7 @@ export default function SettingsPage() {
 
         {showAdd && (
           <CardContent className="border-t pt-4 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-sm">Provider</Label>
                 <Select value={newProvider} onValueChange={(v) => v && setNewProvider(v)}>
