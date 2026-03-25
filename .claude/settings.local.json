@@ -16,7 +16,8 @@
       "Bash(npx --yes sharp-cli --version)",
       "Bash(npx --yes sharp-cli -i public/icons/icon.svg -o public/icons/icon-192x192.png --width 192 --height 192)",
       "Bash(npx sharp-cli:*)",
-      "Bash(./node_modules/.bin/tsc --noEmit next.config.ts)"
+      "Bash(./node_modules/.bin/tsc --noEmit next.config.ts)",
+      "Bash(pnpm install:*)"
     ]
   }
 }
